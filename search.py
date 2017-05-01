@@ -21,16 +21,15 @@ def load_data(name):
 		desc = save['desc']
 		labels = save['train_labels']
 		names = save['name']
-		print(len(desc))
-		print(len(labels))
+		print(name,'loaded')
+		print('desc: ',len(desc))
+		print('labels: ',len(labels))
 		del save
-		print('loaded')
 
 	return desc, labels, names
 
 def distance(a,b):
 	dsum = 0.
-	print(len(a),len(b))
 	for i in range(len(a)):
 		dsum += (a[i]-b[i])**2
 	return dsum
@@ -79,11 +78,11 @@ if __name__ == "__main__":
 		print(t, "==>", correct / top_n, "==>", sum(eval_res) / len(eval_res))
 		
 		dst_cur = dst_root + '/test_' + str(test_num) + '_c' + str(correct)
-		os.makedirs(dst_cur)
+		# os.makedirs(dst_cur)
 
 		src = src_root2 + t_names[t]
 		dst = dst_cur + '/query_' + t_labels[t]
-		shutil.copyfile(src, dst)
+		# shutil.copyfile(src, dst)
 		
 		ResultQ.append(src)
 		indexQ.append(t)
@@ -94,7 +93,7 @@ if __name__ == "__main__":
 			src = src_root + names[retrievals[j][1]]
 
 			dst = dst_cur + '/' + str(j) + '_' + labels[retrievals[j][1]] + '.png'
-			shutil.copyfile(src, dst)
+			# shutil.copyfile(src, dst)
 			tempR.append(src)
 			tmpindex.append(retrievals[j][1])
 		

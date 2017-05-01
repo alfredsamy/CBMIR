@@ -193,15 +193,15 @@ with graph.as_default():
 
 if __name__ == '__main__':
 	imgs = []
-	file = 'dataset.txt'
-	# file = 'test.txt'
+	# file = 'dataset.txt'
+	file = 'test.txt'
 	with open(file, 'r') as fo:
 		for line in fo.read().split('\n'):
 			imgs.append(line)
 		fo.close()
 
-	dict = unpickle('dataset_labels')['labels']
-	# dict = unpickle('test_labels')['labels']
+	# dict = unpickle('dataset_labels')['labels']
+	dict = unpickle('test_labels')['labels']
 
 	desc8 = []
 	desc7 = []
@@ -226,8 +226,8 @@ if __name__ == '__main__':
 
 			index += batch_size
 		
-	f = open("train_desc", 'wb')
-	# f = open("test_desc", 'wb')
+	# f = open("train_desc", 'wb')
+	f = open("test_desc", 'wb')
 	save = {
 		'desc7': desc7,
 	    'desc': desc8,

@@ -32,8 +32,8 @@ def load_data(name):
 
 	return desc, labels, names
 
-def load_result():
-	with open('retrieval_result', 'rb') as f:
+def load_result(name):
+	with open(name, 'rb') as f:
 		save = pickle.load(f)
 		ResultQ = save['query']
 		ResultR = save['result']
@@ -77,7 +77,7 @@ def RBC(image, steps = 16):
 if __name__ == "__main__":
 	desc, labels, names = load_data('train_desc')
 	t_desc, t_labels,t_names = load_data('test_desc')
-	ResultQ, ResultR, indexQ, indexR = load_result()
+	ResultQ, ResultR, indexQ, indexR = load_result('retrieval_result_fc8')
 
 	# Make result directory
 	dst_root = 'Retrieval22'
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 			fc7_retrievals[i] = (fc7_retrievals[i] - fc7_min ) / fc7_max
 			rbc_retrievals[i] = (rbc_retrievals[i] - rbc_min ) / rbc_max
 			# gist_retrievals[i] /= gist_max
-			hq.heappush(combined_ret, (0.7*fc7_retrievals[i]+0.3*rbc_retrievals[i], i))
+			hq.heappush(combined_ret, (0.75*fc7_retrievals[i]+0.25*rbc_retrievals[i], i))
 			# hq.heappush(combined_ret2, (0.6*fc7_retrievals[i]+0.2*rbc_retrievals[i]+0.2*gist_retrievals[i], i))
 			# hq.heappush(combined_ret, (fc7_retrievals[i], i))
 		
@@ -177,4 +177,4 @@ if __name__ == "__main__":
 			shutil.copyfile(src, dst)
 	
 	print('[Mean Accuracy]', sum(eval_res) / len(eval_res))
-	print('[Mean Accuracy]', sum(eval_res2) / len(eval_res2))
+	# print('[Mean Accuracy]', sum(eval_res2) / len(eval_res2))
