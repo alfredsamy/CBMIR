@@ -5,19 +5,14 @@ import numpy as np
 from six.moves import cPickle as pickle
 from six.moves import range
 from scipy import misc
+from skimage import feature
 import numpy as np
 import random
 import sys
 import heapq as hq
 import shutil
 import os
-import gist #https://github.com/yuichiroTCY/lear-gist-python
-
-
-# gist descriptor of size 960
-def gist_descriptor(img):
-	return []
-	# return gist.extract(img)
+# import gist #https://github.com/yuichiroTCY/lear-gist-python
 
 def load_data(name):
 	with open(name, 'rb') as f:
@@ -44,13 +39,24 @@ def load_result(name):
 	del ResultR[0]
 	del indexR[0]
 	return ResultQ, ResultR, indexQ, indexR
-	
-# calculate ecludian distance
-def distance(a,b):
-	dsum = 0.
-	for i in range(len(a)):
-		dsum += (a[i]-b[i])**2
-	return dsum
+
+# # gist descriptor of size 960
+# def gist_descriptor(img):
+# 	return gist.extract(img)
+
+def local_binary_pattern(gray, numPoints = 80, radius = 8):
+	eps=1e-7
+
+	lbp = feature.local_binary_pattern(gray, numPoints, radius, method="uniform")
+	(hist, _) = np.histogram(lbp.ravel(),
+		bins=np.arange(0, numPoints + 3),
+		range=(0, numPoints + 2))
+ 
+	# normalize the histogram
+	hist = hist.astype("float")
+	hist /= (hist.sum() + eps)
+ 
+	return hist
 
 # calculate RBC code for image (image.x == image.y )
 def RBC(image, steps = 16):
@@ -73,6 +79,17 @@ def RBC(image, steps = 16):
 			R[j] = 1
 	return R
 
+# calculate ecludian distance
+def distance(a,b):
+	dsum = 0.
+	for i in range(len(a)):
+		dsum += (a[i]-b[i])**2
+	return dsum
+	# dsum = 0.
+	# for i in range(len(a)):
+	# 	dsum += abs(a[i]-b[i])
+	# return dsum
+
 
 if __name__ == "__main__":
 	desc, labels, names = load_data('train_desc')
@@ -83,8 +100,8 @@ if __name__ == "__main__":
 	dst_root = 'Retrieval22'
 	shutil.rmtree(dst_root, True)
 	os.makedirs(dst_root)
-	src_root = '/media/alfred/B8308B68308B2D06/IRMA/ImageCLEFmed2009_train.02/'
-	src_root2 = '/media/alfred/B8308B68308B2D06/IRMA/ImageCLEFmed2009_test.03/'
+	src_root = 'ImageCLEFmed2009_train.02/'
+	src_root2 = 'ImageCLEFmed2009_test.03/'
 
 	test_num = -1
 	resize = 192
@@ -92,21 +109,20 @@ if __name__ == "__main__":
 	eval_res2 = []
 	top_n = 5
 	# for t in range(len(t_desc)):
-	for t in range(len(ResultQ)):
-
-		gist_test_img = misc.imread(ResultQ[t],mode='RGB')
-		gist_test_img = gist_descriptor(gist_test_img)
-		
-
+	# for t in range(len(ResultQ)):
+	for t in range(100):
 		rbc_test_img = misc.imread(ResultQ[t],mode='L')
 		rbc_test_img = misc.imresize(rbc_test_img,(resize,resize))
+		
+		# lbp_test_img = local_binary_pattern(rbc_test_img)
 		rbc_test_img = RBC(rbc_test_img)
 		fc7_test_img = t_desc[t]
+
 
 		test_num += 1
 		fc7_retrievals = []
 		rbc_retrievals = []
-		gist_retrievals = []
+		lbp_retrievals = []
 		combined_ret = []
 		retrievals = []
 
@@ -115,51 +131,56 @@ if __name__ == "__main__":
 	
 		for i in range(len(ResultR[t])):
 			# Calculate different distances
-			gist_img = gist_descriptor(misc.imread(ResultR[t][i],mode='RGB'))
 			
 			rbc_img = misc.imread(ResultR[t][i],mode='L')
 			rbc_img = misc.imresize(rbc_img,(resize,resize))
+			
+			# lbp_img = local_binary_pattern(rbc_img)
 			rbc_img = RBC(rbc_img)
+
 
 			rbc_dist = distance(rbc_img, rbc_test_img)
 			fc7_dist = distance(desc[indexR[t][i]], fc7_test_img)
-			gist_dist = distance(gist_test_img, gist_img)
+			# lpb_dist = distance(lbp_test_img, lbp_img)
 			
 			rbc_retrievals.append(rbc_dist)
 			fc7_retrievals.append(fc7_dist)
-			gist_retrievals.append(gist_dist)
+			# lbp_retrievals.append(lpb_dist)
 
-		# Normalize the 2 result and combine them
-		fc7_min = min(fc7_retrievals)
-		rbc_min = min(rbc_retrievals)
 		
-		fc7_max = max(fc7_retrievals)-fc7_min
-		rbc_max = max(rbc_retrievals)-rbc_min
-		gist_max = max(gist_retrievals)
+		# Normalize the 2 result and combine them
+		# fc7_min = min(fc7_retrievals)
+		# rbc_min = min(rbc_retrievals)
+		# # lbp_min = min(lbp_retrievals)
+		
+		# fc7_max = max(fc7_retrievals)-fc7_min
+		# rbc_max = max(rbc_retrievals)-rbc_min
+		# # lbp_max = max(lbp_retrievals)-lbp_min
+
+		# for i in range(len(fc7_retrievals)):
+		# 	fc7_retrievals[i] = (fc7_retrievals[i] - fc7_min) / fc7_max
+		# 	rbc_retrievals[i] = (rbc_retrievals[i] - rbc_min) / rbc_max
+		# 	# lbp_retrievals[i] = (lbp_retrievals[i] - lbp_min) / lbp_max
+		# 	hq.heappush(combined_ret, (lbp_retrievals[i], i))
+		# 	hq.heappush(combined_ret2, (fc7_retrievals[i]+rbc_retrievals[i], i))
+		
+		
 		for i in range(len(fc7_retrievals)):
-			fc7_retrievals[i] = (fc7_retrievals[i] - fc7_min ) / fc7_max
-			rbc_retrievals[i] = (rbc_retrievals[i] - rbc_min ) / rbc_max
-			# gist_retrievals[i] /= gist_max
-			hq.heappush(combined_ret, (0.75*fc7_retrievals[i]+0.25*rbc_retrievals[i], i))
-			# hq.heappush(combined_ret2, (0.6*fc7_retrievals[i]+0.2*rbc_retrievals[i]+0.2*gist_retrievals[i], i))
-			# hq.heappush(combined_ret, (fc7_retrievals[i], i))
+			hq.heappush(combined_ret, (rbc_retrievals[i]+fc7_retrievals[i], i))
+			hq.heappush(combined_ret2, (rbc_retrievals[i], i))
 		
 		# retrieve top N result
 		for x in range(top_n):
 			retrievals.append(hq.heappop(combined_ret))
-			# retrievals2.append(hq.heappop(combined_ret2))
+			retrievals2.append(hq.heappop(combined_ret2))
 		correct = sum([1 for j in [labels[ indexR[t][u[1]] ] for u in retrievals] if j == t_labels[t]])
 		eval_res += [correct / top_n]
 
-		# correct2 = sum([1 for j in [labels[ indexR[t][u[1]] ] for u in retrievals2] if j == t_labels[t]])
-		# eval_res2 += [correct2 / top_n]
+		correct2 = sum([1 for j in [labels[ indexR[t][u[1]] ] for u in retrievals2] if j == t_labels[t]])
+		eval_res2 += [correct2 / top_n]
 		
-		# print('[query label] ', t_names[t],' ',t_labels[t])
-		# print('[names]', [names[u[1]] for u in retrievals])
-		# print('[labels]', correct, [labels[i[1]] for i in retrievals])
-		# print()
-		print(t, "==>", correct / top_n, "==>", sum(eval_res) / len(eval_res))
-				 # "||", correct2 / top_n, "==>", sum(eval_res2) / len(eval_res2))
+		print(t, "==>", correct / top_n, "==>", sum(eval_res) / len(eval_res),
+				"||", correct2 / top_n, "==>", sum(eval_res2) / len(eval_res2))
 
 		
 		# Save output images
@@ -177,4 +198,4 @@ if __name__ == "__main__":
 			shutil.copyfile(src, dst)
 	
 	print('[Mean Accuracy]', sum(eval_res) / len(eval_res))
-	# print('[Mean Accuracy]', sum(eval_res2) / len(eval_res2))
+	print('[Mean Accuracy]', sum(eval_res2) / len(eval_res2))
